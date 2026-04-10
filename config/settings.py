@@ -1,0 +1,102 @@
+"""
+settings.py — 项目全局配置。
+
+优先级：环境变量 > .env 文件 > 默认值
+"""
+
+from __future__ import annotations
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,   # 环境变量大小写不敏感
+        extra="ignore",         # 忽略 .env 里多余的 key，不报错
+    )
+
+    # ── 日志 ──────────────────────────────────────────────────────────────
+    log_level: str = Field("INFO", description="日志级别: DEBUG/INFO/WARNING/ERROR")
+
+    # ── 文件存储 ──────────────────────────────────────────────────────
+    upload_dir: str = Field("uploaded_files", description="上传文件目录")
+    db_path: str = Field("data/rag_meta.db", description="SQLite 元数据库路径")
+
+    # ── MinIO / Object Storage ───────────────────────────────────────
+    minio_endpoint: str = Field("localhost:9000", description="MinIO endpoint")
+    minio_access_key: str = Field("", description="MinIO access key")
+    minio_secret_key: str = Field("", description="MinIO secret key")
+    minio_bucket: str = Field("rag-documents", description="MinIO bucket")
+    minio_secure: bool = Field(False, description="MinIO 是否使用 https")
+    minio_region: str | None = Field(None, description="MinIO bucket region")
+    minio_auto_create_bucket: bool = Field(True, description="启动时自动创建 bucket")
+    minio_presigned_expires_hours: int = Field(12, description="MinIO 预签名 URL 过期时间（小时）")
+
+    # ── Redis ──────────────────────────────────────────────────────────
+    redis_host:     str = Field("localhost", description="Redis 主机")
+    redis_port:     int = Field(6379,        description="Redis 端口")
+    redis_password: str = Field("",    description="Redis 密码，无则留空")
+    redis_db_broker:  int = Field(0, description="Celery Broker 用的 DB")
+    redis_db_backend: int = Field(1, description="Celery Result Backend 用的 DB")
+
+    # ── Milvus 向量库 ─────────────────────────────────────────────────
+    milvus_host: str = Field("localhost", description="Milvus 地址")
+    milvus_port: int = Field(19530, description="Milvus 端口")
+    milvus_collection: str = Field("rag_docs", description="集合名称")
+
+    # ── Embedding ─────────────────────────────────────────────────────
+    embedding_provider: str = Field("local", description="local / remote")
+    embedding_model: str = Field("BAAI/bge-m3", description="向量模型名称")
+    embedding_device: str = Field("cpu", description="向量模型推理设备")
+    embedding_batch_size: int = Field(32, description="批量向量化大小")
+    embedding_api_base: str = Field("", description="远程 embedding API 地址")
+    embedding_api_key: str = Field("", description="远程 embedding API Key")
+
+    # ── Reranker ──────────────────────────────────────────────────────
+    reranker_provider: str  = Field("local", description="local / remote")
+    reranker_model:   str  = Field("BAAI/bge-reranker-v2-m3", description="Reranker 模型")
+    reranker_device:  str  = Field("cpu",  description="Reranker 设备: cpu / cuda")
+    reranker_enabled: bool = Field(True,   description="是否启用 Reranker")
+    reranker_api_base: str = Field("", description="远程 reranker API 地址")
+    reranker_api_key: str = Field("", description="远程 reranker API Key")
+    
+    # ── LLM ──────────────────────────────────────────────────────────
+    llm_provider: str = Field("openai", description="openai / ollama")
+    llm_api_base: str = Field("", description="LLM API 地址")
+    llm_api_key: str = Field("", description="LLM API Key")
+    llm_model: str = Field("Qwen3.5-27B", description="模型名称")
+    llm_temperature: float = Field(0.3, ge=0.0, le=2.0)
+    llm_max_tokens: int = Field(2048, ge=1)
+
+    # ── OCR / VL ─────────────────────────────────────────────────────
+    vl_backend: str | None = Field(None, description="none=本地cpu / vllm-server 等")
+    vl_base_url: str | None = Field(None, description="vLLM 服务地址")
+    vl_model: str | None = Field("glm-ocr:latest", description="OCR 模型，None=本地cpu")
+    vl_device: str | None = Field(None, description="OCR 推理设备，None=自动")
+    vl_max_file_mb: float = Field(50.0, description="OCR 图片大小上限 MB")
+    vl_max_px: int = Field(1600, description="OCR 图片最大像素")
+    vl_timeout: int = Field(120, description="OCR 推理超时时间")
+    pdf_force_ocr: bool = Field(False, description="PDF 是否直接走 OCR，跳过文字层检测")
+
+    # ── 文件访问 ─────────────────────────────────────────────────────
+    file_access_url_template: str = Field(
+        "http://192.168.2.202:8000/api/files/{file_id}/asset?disposition=inline",
+        description="文件访问 URL 模板，使用 {file_id} 作为占位符"
+    )
+
+    @property
+    def redis_broker_url(self) -> str:
+        auth = f":{self.redis_password}@" if self.redis_password else ""
+        return f"redis://{auth}{self.redis_host}:{self.redis_port}/{self.redis_db_broker}"
+
+    @property
+    def redis_backend_url(self) -> str:
+        auth = f":{self.redis_password}@" if self.redis_password else ""
+        return f"redis://{auth}{self.redis_host}:{self.redis_port}/{self.redis_db_backend}"
+
+# 全局单例，项目任意位置 from config.settings import settings 即可使用
+settings = Settings()

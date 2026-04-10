@@ -1,0 +1,25 @@
+# API
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Config
+pydantic
+pydantic-settings
+
+# Storage / Vector DB
+minio
+pymilvus
+
+# Extractors
+pandas
+openpyxl
+python-docx
+beautifulsoup4
+charset-normalizer
+pypdfium2
+python-pptx
+
+# Testing / Client
+httpx
+pytest
