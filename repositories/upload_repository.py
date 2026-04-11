@@ -4,13 +4,15 @@ import sqlite3
 from pathlib import Path
 
 from config.settings import settings
+from core.base import BaseRepository
 from models.upload import UploadBatchResult, UploadedFileRecord
 
 
-class UploadRepository:
+class UploadRepository(BaseRepository):
     """Stores deduplicated file metadata and task bindings in SQLite."""
 
     def __init__(self, db_path: str | Path | None = None) -> None:
+        super().__init__()
         self.db_path = Path(db_path or settings.db_path)
 
     def initialize(self) -> None:
@@ -336,3 +338,8 @@ class UploadRepository:
                 """
             )
         self.initialize()
+
+    def close(self) -> None:
+        """关闭仓储连接"""
+        # SQLite连接是自动管理的，这里不需要特殊处理
+        self.logger.info("关闭UploadRepository连接")

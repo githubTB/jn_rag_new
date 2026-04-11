@@ -4,11 +4,12 @@ import shutil
 from pathlib import Path
 
 from config.settings import settings
+from core.base import BaseService
 from repositories.upload_repository import UploadRepository
 from services.storage import MinioServiceError, MinioStorageService
 
 
-class MaintenanceService:
+class MaintenanceService(BaseService):
     """Handles destructive maintenance operations behind admin-style APIs."""
 
     def __init__(
@@ -18,10 +19,19 @@ class MaintenanceService:
         repository: UploadRepository | None = None,
         storage: MinioStorageService | None = None,
     ) -> None:
+        super().__init__()
         project_root = Path(__file__).resolve().parents[1]
         self.upload_root = upload_root or (project_root / settings.upload_dir)
         self.repository = repository or UploadRepository()
         self.storage = storage
+
+    async def initialize(self) -> None:
+        """初始化服务"""
+        self.logger.info("初始化MaintenanceService")
+
+    async def shutdown(self) -> None:
+        """关闭服务"""
+        self.logger.info("关闭MaintenanceService")
 
     def drop_collection_data(self) -> dict[str, object]:
         """Clear local cache, SQLite upload metadata, MinIO objects, and Milvus collection."""

@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import timedelta
 
 from config.settings import settings
+from core.base import BaseService
 
 try:
     from minio import Minio
@@ -28,8 +29,9 @@ class UploadedObject:
     version_id: str | None
 
 
-class MinioStorageService:
+class MinioStorageService(BaseService):
     def __init__(self) -> None:
+        super().__init__()
         if Minio is None:
             raise MinioServiceError(
                 "未安装 minio 依赖，请先安装 `minio` Python SDK"
@@ -45,6 +47,20 @@ class MinioStorageService:
             secure=settings.minio_secure,
             region=settings.minio_region,
         )
+
+    async def initialize(self) -> None:
+        """初始化服务"""
+        self.logger.info("初始化MinioStorageService")
+        try:
+            self.ensure_bucket()
+            self.logger.info(f"MinIO bucket {self.bucket} 初始化成功")
+        except MinioServiceError as exc:
+            self.logger.warning(f"MinIO 初始化未完成: {exc}")
+
+    async def shutdown(self) -> None:
+        """关闭服务"""
+        self.logger.info("关闭MinioStorageService")
+        # MinIO 客户端不需要特殊关闭操作
 
     def ensure_bucket(self) -> None:
         try:

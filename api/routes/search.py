@@ -5,8 +5,13 @@ import logging
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
+from core.di import get_container
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["search"])
+
+# 获取依赖注入容器
+container = get_container()
 
 
 @router.get("/search")

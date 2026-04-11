@@ -4,12 +4,16 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
+from core.di import get_container
 from models.upload import UploadBatchResult, UploadedFileRecord
 from repositories.upload_repository import UploadRepository
 from schemas.upload import UploadBatchResponse, UploadedFileResponse
 from services.upload_service import UploadService
 
 router = APIRouter(prefix="/api", tags=["ingest"])
+
+# 获取依赖注入容器
+container = get_container()
 
 
 def _cache_file_url(task_id: str, relative_path: str) -> str:
@@ -67,7 +71,11 @@ async def upload_folder(
     chapter: str = Form(...),
 ):
     """Receive frontend folder upload and delegate all business logic to the service layer."""
-    batch = await UploadService().upload_folder(
+    upload_service = container.get(UploadService)
+    if not upload_service:
+        raise HTTPException(status_code=500, detail="UploadService 未初始化")
+    
+    batch = await upload_service.upload_folder(
         files=files,
         relative_paths=relative_paths,
         task_id=task_id,
@@ -81,7 +89,11 @@ async def upload_folder(
 @router.get("/upload/{task_id}", response_model=UploadBatchResponse)
 async def get_upload_batch(task_id: str, request: Request):
     """Query one upload batch from SQLite for frontend playback or debugging."""
-    batch = UploadRepository().get_batch(task_id.strip())
+    upload_repo = container.get(UploadRepository)
+    if not upload_repo:
+        raise HTTPException(status_code=500, detail="UploadRepository 未初始化")
+    
+    batch = upload_repo.get_batch(task_id.strip())
     if batch is None:
         raise HTTPException(status_code=404, detail="上传批次不存在")
     return _serialize_batch(request, batch)

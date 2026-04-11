@@ -6,6 +6,7 @@ from pathlib import Path, PurePosixPath
 from fastapi import HTTPException, UploadFile
 
 from config.settings import settings
+from core.base import BaseService
 from models.upload import UploadBatchResult, UploadedFileRecord
 from repositories.upload_repository import UploadRepository
 from services.storage import (
@@ -14,10 +15,8 @@ from services.storage import (
     build_minio_object_key,
 )
 
-logger = logging.getLogger(__name__)
 
-
-class UploadService:
+class UploadService(BaseService):
     """Encapsulates upload flow so API layer only coordinates request/response."""
 
     def __init__(
@@ -27,10 +26,25 @@ class UploadService:
         storage: MinioStorageService | None = None,
         repository: UploadRepository | None = None,
     ) -> None:
+        super().__init__()
         project_root = Path(__file__).resolve().parents[1]
         self.upload_root = upload_root or (project_root / settings.upload_dir)
         self.storage = storage or MinioStorageService()
         self.repository = repository or UploadRepository()
+
+    async def initialize(self) -> None:
+        """初始化服务"""
+        self.logger.info("初始化UploadService")
+        # 确保上传目录存在
+        self.upload_root.mkdir(parents=True, exist_ok=True)
+        # 初始化仓储
+        self.repository.initialize()
+
+    async def shutdown(self) -> None:
+        """关闭服务"""
+        self.logger.info("关闭UploadService")
+        # 关闭仓储连接
+        self.repository.close()
 
     async def upload_folder(
         self,
@@ -117,7 +131,7 @@ class UploadService:
         )
         self.repository.save_batch(batch)
 
-        logger.info(
+        self.logger.info(
             "[Upload] 企业=%s task_id=%s 章节=%s 文件数=%d 总大小=%dB",
             final_company_name,
             final_task_id,
