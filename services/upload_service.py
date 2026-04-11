@@ -92,11 +92,14 @@ class UploadService:
                     cache_path=str(destination),
                     size=file_size,
                     content_type=upload_file.content_type,
+                    content_hash="",
                     bucket=uploaded_object.bucket,
                     object_key=uploaded_object.object_key,
                     object_url=object_url,
                     etag=uploaded_object.etag,
                     version_id=uploaded_object.version_id,
+                    deduplicated=False,
+                    processing_required=True,
                 )
             )
 

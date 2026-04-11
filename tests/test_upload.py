@@ -125,7 +125,7 @@ def test_upload_folder_simulates_frontend_request(tmp_path, monkeypatch) -> None
             ("test-task-001",),
         ).fetchone()
         file_row = conn.execute(
-            "SELECT bucket, object_key FROM uploaded_files WHERE task_id = ? LIMIT 1",
+            "SELECT sf.bucket, sf.object_key FROM task_files tf JOIN stored_files sf ON sf.id = tf.stored_file_id WHERE tf.task_id = ? LIMIT 1",
             ("test-task-001",),
         ).fetchone()
 

@@ -188,6 +188,42 @@ class UploadRepository:
                     batch.total_bytes,
                 ),
             )
+            
+            # 先插入stored_files表
+            for file in batch.files:
+                conn.execute(
+                    """
+                    INSERT INTO stored_files (
+                        id, content_hash, filename, cache_path, size, content_type,
+                        bucket, object_key, object_url, etag, version_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(content_hash) DO UPDATE SET
+                        filename = excluded.filename,
+                        cache_path = excluded.cache_path,
+                        size = excluded.size,
+                        content_type = excluded.content_type,
+                        bucket = excluded.bucket,
+                        object_key = excluded.object_key,
+                        object_url = excluded.object_url,
+                        etag = excluded.etag,
+                        version_id = excluded.version_id
+                    """,
+                    (
+                        file.content_hash,
+                        file.content_hash,
+                        file.filename,
+                        file.cache_path,
+                        file.size,
+                        file.content_type,
+                        file.bucket,
+                        file.object_key,
+                        file.object_url,
+                        file.etag,
+                        file.version_id,
+                    ),
+                )
+            
+            # 再插入task_files表
             conn.executemany(
                 """
                 INSERT INTO task_files (

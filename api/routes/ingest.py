@@ -85,3 +85,27 @@ async def get_upload_batch(task_id: str, request: Request):
     if batch is None:
         raise HTTPException(status_code=404, detail="上传批次不存在")
     return _serialize_batch(request, batch)
+
+
+@router.get("/chapters")
+async def get_chapters():
+    """获取章节列表"""
+    from config.green_report_chapters_config import get_all_chapters as get_all_chapters_config
+    
+    chapters = []
+    for chapter, node in get_all_chapters_config():
+        chapters.append({
+            "value": chapter,
+            "label": f"{chapter} {node.get('title', '')}"
+        })
+    
+    return {"chapters": chapters}
+
+
+@router.get("/supported-extensions")
+async def get_supported_extensions():
+    """获取支持的文件类型列表"""
+    from core.rag.extractor_processor import ExtractProcessor
+    
+    extensions = ExtractProcessor.supported_extensions()
+    return {"extensions": extensions}

@@ -859,7 +859,7 @@ def get_chapter_keywords(chapter: str) -> list[str]:
     return node.get("keywords", []) if node else []
 
 
-def get_all_chapters() -> list[str]:
+def get_all_chapter_codes() -> list[str]:
     """获取所有章节目录列表"""
     result = []
     for chapter, _ in get_all_chapters():
