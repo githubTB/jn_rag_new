@@ -20,6 +20,7 @@ class UploadedFileRecord:
     version_id: str | None
     deduplicated: bool
     processing_required: bool
+    file_id: str | None = None
 
 
 @dataclass(frozen=True)

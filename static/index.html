@@ -460,7 +460,7 @@ let queryMode = 'chat';
 let chatMessages = [];
 
 function companyTaskId(company) {
-  return company?.task_id || '';
+  return company?.credit_code || '';
 }
 
 function companyDisplayName(company) {
@@ -767,13 +767,13 @@ function renderFileList(files, cid) {
     return;
   }
   el.innerHTML = files.map(f => {
-    const fileId = f.file_id;
+    const fileId = f.file_id || f.content_hash;
     const confirmBadge = f.doc_type_confirmed
       ? '<span class="tag tg-confirmed">✓ 已确认</span>'
       : '<span class="tag tg-auto">自动</span>';
     const displayPath = (f.file_path || f.filename).split('/').pop();
-    const preview = fileAssetUrl(fileId, 'inline');
-    const download = fileAssetUrl(fileId, 'attachment');
+    const preview = f.object_url || fileAssetUrl(fileId, 'inline');
+    const download = f.object_url || fileAssetUrl(fileId, 'attachment');
     const dtOptions = DOC_TYPES.map(t =>
       `<option value="${t}" ${t===f.doc_type?'selected':''}>${TYPE_LABEL[t]||t}</option>`).join('');
     return `

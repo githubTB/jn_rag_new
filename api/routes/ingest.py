@@ -121,3 +121,47 @@ async def get_supported_extensions():
     
     extensions = ExtractProcessor.supported_extensions()
     return {"extensions": extensions}
+
+
+@router.get("/companies")
+async def get_companies():
+    """获取企业列表"""
+    upload_repo = container.get(UploadRepository)
+    if not upload_repo:
+        raise HTTPException(status_code=500, detail="UploadRepository 未初始化")
+    
+    companies = upload_repo.get_companies()
+    return {"companies": companies}
+
+
+@router.get("/companies/{credit_code}")
+async def get_company(credit_code: str):
+    """获取企业详情"""
+    upload_repo = container.get(UploadRepository)
+    if not upload_repo:
+        raise HTTPException(status_code=500, detail="UploadRepository 未初始化")
+    
+    company = upload_repo.get_company_by_credit_code(credit_code.strip())
+    if not company:
+        raise HTTPException(status_code=404, detail="企业不存在")
+    
+    return company
+
+
+@router.post("/files/{file_id}/replace")
+async def replace_file(
+    file_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+):
+    """覆盖上传文件"""
+    upload_service = container.get(UploadService)
+    if not upload_service:
+        raise HTTPException(status_code=500, detail="UploadService 未初始化")
+    
+    replaced_file, task_id = await upload_service.replace_file(
+        file_id=file_id.strip(),
+        upload_file=file,
+    )
+    
+    return _serialize_file(request, task_id, replaced_file)
